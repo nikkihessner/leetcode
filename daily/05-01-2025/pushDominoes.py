@@ -40,23 +40,14 @@ dominoes[i] is either 'L', 'R', or '.'."""
 class Solution:
     # need to check the rightmost domino for falling left and leftmost domino for falling right and then iterate in opposite directions
     def pushDominoes(dominoes: str) -> str:
-        # every domino right of the first right domino has a rightward force
-        def dominoes_fall_right(dominoes: list, i: int) -> list:
-            j = dominoes.index(0b10)
-            # dominoes fall right until there is a vertical domino between a right falling domino and a left falling domino (j - 1)
-            for i in dominoes[i : j - 1]:
-                dominoes[i] |= 0b01
-            return dominoes
-        
-        # every domino left of the first left domino as a leftward force
-        def dominoes_fall_left(bitmask_dominoes: list, i: int) -> list:
-            if bitmask_dominoes[-1 - i] == 0b10:
-                for j in range(-1 - i, -len(bitmask_dominoes)-1, -1):
-                    bitmask_dominoes[j] |= 0b10
-                return bitmask_dominoes
-            
         # convert dominoes to a list since str is an immutable type
+        n = len(dominoes)
+
+        if n == 1:
+            return dominoes 
+
         dominoes = list(dominoes)
+        
         # bitmask the dominoes to reduce memory usage
         bitmask = {
             '.': 0b00,
@@ -65,65 +56,49 @@ class Solution:
         }
         dominoes = [bitmask[d] for d in dominoes]
 
-        for i in range(len(dominoes)):
-            if dominoes[i] == 0b00 and dominoes[-1 - i] == 0b00:
-                continue
+        # make copies of dominoes to examine leftward and rightward forces separately
+        right = [dominoes[0]]
+        left = [dominoes[-1]]
 
-            if dominoes[i] == 0b01:
-                dominoes = dominoes_fall_right(dominoes, i)
-            
-            if dominoes[-1-i] == 0b10:
-                dominoes = dominoes_fall_left(dominoes, i)
-
-                
-        n = len(dominoes)
-        # check for a L domino to the right
-        def check_right(domino: str) -> bool:
-            if domino == "." and dominoes[i + 1] == "L":
-                return True 
-            else: 
-                False
+        for i in range(n - 2):
+            if dominoes[i + 1] in [0b00, 0b01] and dominoes[i + 2] != 0b10 and right[-1] == 0b01:
+                right.append(0b01)
+            elif dominoes[i + 1] == 0b00 and right[-1] == 0b00:
+                right.append(0b00)
+            else:
+                right.append(dominoes[i+1])
         
-        # check for a R domino to the left
-        def check_left(domino: str) -> bool:
-            domino = dominoes[i] 
-            if domino == "." and dominoes[-1 - i] == "R":
-                return True
+        if dominoes[-2] == 0b01 and dominoes[-1] != 0b10:
+            right.append(0b01)
+        else:
+            right.append(dominoes[-1])
+
+        for i in range(n - 2):
+            if dominoes[-2 - i] in [0b00, 0b10] and dominoes[-3 - i] != 0b01 and left[-1] == 0b10:
+                left.append(0b10)
+            elif dominoes[-2 - i] == 0b00 and left[-1] == 0b00:
+                left.append(0b00)
             else:
-                return False 
-            
-        for i in range(n):
-            domino = dominoes[i]
-            # only check the straight up and down dominoes
-            if domino != ".":
-                continue
-            
-            # first domino has no domino to the left
-            if i == 0:
-                right = check_right(domino)
-                left = False
-            # last domino has no domino to the right 
-            elif i == n - 1:
-                left = check_left(domino)
-                right = False
-            # all of the other dominoes have dominos on both sides
-            else:
-                right = check_right(domino)
-                left = check_right(domino)
-            
-            # if left and right are both falling, the domino stays straight up 
-            if left==right:
-                continue
-            # if the left domino is falling to the right, but the right domino is not falling to the left
-            elif left and not right:
-                dominoes[i] = "R"
-            # if the right domino is falling to the left, but the left domino is not falling to the right
-            elif right and not left:
-                dominoes[i] = "L"
-            
+                left.append(dominoes[-2 - i])
+        
+        if dominoes[1] == 0b10 and dominoes[0] != 0b01:
+            left.append(0b10)
+        else:
+            left.append(dominoes[0])
+
+        left.reverse()        
+
+        dominoes = [r | l for r, l in zip(right, left)]
+
+        reverse_bitmask = {0b00: '.',
+                           0b01: 'R',
+                           0b10: 'L',
+                           0b11: '.'}
+        
+        dominoes = [reverse_bitmask[d] for d in dominoes]
+
+
+
         dominoes = ''.join(dominoes)
-        
-        return dominoes 
 
-            
-                
+        return(dominoes)
